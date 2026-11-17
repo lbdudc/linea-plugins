@@ -2,8 +2,8 @@ name: Release
 
 # Creating a GitHub Release (tag vX.Y.Z) publishes the images of the services the plugins run as (GHCR, amd64 + arm64):
 #   ghcr.io/lbdudc/linea-flamapy   ghcr.io/lbdudc/linea-agents   ghcr.io/lbdudc/linea-mcp
-# and, when the repository variable PUBLISH_MCP is 'true', @lbdudc/linea-plugin-mcp on npm (trusted publishing, no token: publish the
-# package once by hand, add the trusted publisher on npmjs.com for lbdudc/linea-plugins + release.yml, then set the variable).
+# and @lbdudc/linea-plugin-mcp on npm (trusted publishing, no token: the trusted publisher of the package is lbdudc/linea-plugins + release.yml).
+# The package version is the tag's.
 
 on:
   release:
@@ -54,7 +54,6 @@ jobs:
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
 
   npm-mcp:
-    if: ${{ vars.PUBLISH_MCP == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,5 +67,8 @@ jobs:
       - name: Version = the tag
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
         working-directory: mcp-plugin
-      - run: npm publish --access public
+      - name: Publish unless this version is on npm already
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if npm view "@lbdudc/linea-plugin-mcp@$version" version >/dev/null 2>&1; then echo "already on npm"; else npm publish --access public; fi
         working-directory: mcp-plugin

@@ -1,6 +1,6 @@
 {
   "name": "@lbdudc/linea-plugin-mcp",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "MCP server for LINEA: lets an AI client (Claude, Cursor...) read and edit a software product line over the Model Context Protocol, over stdio (this package) or HTTP (the mcp-plugin service).",
   "main": "dist/index.js",

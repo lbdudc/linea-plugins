@@ -8,7 +8,7 @@ the catalog (`marketplace.json`), the official plugins, and how to write your ow
 | [`analytics-plugin`](analytics-plugin) | Feature-model analysis with flamapy (figures strip, analysis panel). Runs a service of its own. |
 | [`agents-plugin`](agents-plugin) | AI agents as pages of LINEA. Its service (`agents-plugin/service`) deploys apart and talks to LINEA by REST. |
 | [`spl-code-editor`](spl-code-editor) | The Code tab of simple SPLs: file editor, feature↔code annotations, trial derivation. |
-| [`mcp-plugin`](mcp-plugin) | MCP server: use a line of LINEA from an AI client (Claude, Cursor...) over the Model Context Protocol, as the person who connects. A service of its own (`ghcr.io/lbdudc/linea-mcp`, endpoint `/mcp/<line id>`), also as a stdio npm package. |
+| [`mcp-plugin`](mcp-plugin) | MCP server: use a line of LINEA from an AI client (Claude, Cursor...) over the Model Context Protocol, as the person who connects. A service of its own (`ghcr.io/lbdudc/linea-mcp`, endpoint `/mcp/<line id>`), also as the stdio npm package `@lbdudc/linea-plugin-mcp`. |
 
 **Use them.** The official LINEA images (`ghcr.io/lbdudc/linea-server`, `linea-client`) already carry the plugins of this catalog; an administrator
 switches them on in *Configuration → Plugins*. To use your own folder of plugins, point `PLUGINS_DIR` at it. The services some plugins run as are images too:
