@@ -1,0 +1,55 @@
+{
+  "id": "agents-plugin",
+  "name": {
+    "en": "AI agents",
+    "es": "Agentes de IA",
+    "gl": "Axentes de IA"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "The AI agents of LINEA (sync resolver, line health, evolution), in LINEA's own pages under Agents. Their service has its own database and no login of its own: people sign in to LINEA.",
+    "es": "Los agentes de IA de LINEA (resolutor de sync, salud de la línea, evolución), en las propias páginas de LINEA bajo Agentes. Su servicio tiene base de datos propia y ningún login propio: la gente entra en LINEA.",
+    "gl": "Os axentes de IA de LINEA (resolutor de sync, saúde da liña, evolución), nas propias páxinas de LINEA baixo Axentes. O seu servizo ten base de datos propia e ningún login propio: a xente entra en LINEA."
+  },
+  "icon": "pi-sparkles",
+  "requires": {
+    "linea": "^1.0.0",
+    "hostApi": "^1.0.0"
+  },
+  "client": "client/index.js",
+  "remote": {
+    "baseUrl": "${AGENTS_URL:-http://localhost:3001}",
+    "health": "/api/agents/health",
+    "events": "${AGENTS_URL:-http://localhost:3001}/api/events"
+  },
+  "server": "server/index.js",
+  "serviceKey": "serviceKey",
+  "settings": {
+    "url": {
+      "type": "url",
+      "default": "http://localhost:3001",
+      "env": "AGENTS_URL",
+      "label": {
+        "en": "Agents service address",
+        "es": "Dirección del servicio de agentes",
+        "gl": "Enderezo do servizo de axentes"
+      }
+    },
+    "serviceKey": {
+      "type": "secret",
+      "env": "AGENTS_SERVICE_KEY",
+      "required": true,
+      "label": {
+        "en": "Shared service key",
+        "es": "Clave de servicio compartida",
+        "gl": "Clave de servizo compartida"
+      },
+      "description": {
+        "en": "The same key the agents service has (and LINEA_SERVICE_KEYS=agents-plugin:<key>).",
+        "es": "La misma clave que tiene el servicio de agentes (y LINEA_SERVICE_KEYS=agents-plugin:<clave>).",
+        "gl": "A mesma clave que ten o servizo de axentes (e LINEA_SERVICE_KEYS=agents-plugin:<clave>)."
+      }
+    }
+  },
+  "serviceKey": "serviceKey"
+}

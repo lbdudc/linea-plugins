@@ -1,0 +1,28 @@
+db:
+  hostname: localhost
+  port: 27017
+  schema: splalm
+  schemaTest: splalmTest
+admin:
+  # username and password are read from ADMIN_USERNAME / ADMIN_PASSWORD env vars
+git:
+  baseBranch: bigbang
+  defaultBranch: main
+  generationBranch: generation
+jwt:
+  expirationSeconds: 6900
+ai:
+  model: claude-sonnet-4-6
+  maxTokens: 8192
+  # Agent-memory embeddings (RAG). EMBEDDINGS_URL env overrides embeddingUrl.
+  embeddingUrl:
+  embeddingModel: BAAI/bge-small-en-v1.5
+paths:
+  output: ./tmp
+  platform:
+    root: ./src/platform
+    code: ./src/platform/code
+    model: ./src/platform/model.uvl
+    config: ./src/platform/config.json
+    extraJS: ./src/platform/extra.js
+    transformation: ./src/platform/transformation.js

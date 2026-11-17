@@ -1,0 +1,85 @@
+{
+  "id": "spl-code-editor",
+  "name": {
+    "en": "SPL code editor",
+    "es": "Editor de código de SPL",
+    "gl": "Editor de código de SPL"
+  },
+  "version": "0.1.0",
+  "description": {
+    "en": "Edit the files of a simple SPL in the browser, see which code belongs to which feature, and try a derivation without making a product.",
+    "es": "Edita en el navegador los ficheros de una SPL simple, mira qué código pertenece a qué feature y prueba una derivación sin crear un producto.",
+    "gl": "Edita no navegador os ficheiros dunha SPL simple, mira que código pertence a que feature e proba unha derivación sen crear un produto."
+  },
+  "icon": "pi-code",
+  "requires": {
+    "linea": "^1.0.0",
+    "hostApi": "^1.0.0"
+  },
+  "server": "server/index.js",
+  "client": "client/index.js",
+  "settings": {
+    "maxFileKb": {
+      "type": "number",
+      "default": 512,
+      "min": 1,
+      "max": 8192,
+      "public": true,
+      "label": {
+        "en": "Largest editable file (KB)",
+        "es": "Tamaño máximo de fichero editable (KB)",
+        "gl": "Tamaño máximo de ficheiro editable (KB)"
+      },
+      "description": {
+        "en": "Bigger files are listed but not opened or indexed.",
+        "es": "Los ficheros mayores se listan pero no se abren ni se indexan.",
+        "gl": "Os ficheiros maiores listanse pero non se abren nin se indexan."
+      }
+    },
+    "editableExtensions": {
+      "type": "list",
+      "default": "java,js,mjs,ts,vue,html,xml,css,scss,json,yml,yaml,md,txt,properties,sql,py,gradle,sh,uvl",
+      "public": true,
+      "label": {
+        "en": "Editable extensions",
+        "es": "Extensiones editables",
+        "gl": "Extensións editables"
+      },
+      "description": {
+        "en": "Comma-separated, without the dot.",
+        "es": "Separadas por comas, sin el punto.",
+        "gl": "Separadas por comas, sen o punto."
+      }
+    },
+    "delimiters": {
+      "type": "string",
+      "default": "{}",
+      "label": {
+        "en": "Annotation delimiters override",
+        "es": "Delimitadores de anotación (sustituyen)",
+        "gl": "Delimitadores de anotación (substitúen)"
+      },
+      "description": {
+        "en": "Normally read from each line's src/platform/config.json. JSON like {\"html\":[\"<!--%\",\"%-->\"]} replaces those of an extension.",
+        "es": "Normalmente se leen de src/platform/config.json de cada línea. Un JSON como {\"html\":[\"<!--%\",\"%-->\"]} sustituye los de una extensión.",
+        "gl": "Normalmente lense de src/platform/config.json de cada liña. Un JSON como {\"html\":[\"<!--%\",\"%-->\"]} substitúe os dunha extensión."
+      },
+      "public": false
+    },
+    "coreUrl": {
+      "type": "url",
+      "default": "",
+      "env": "SPL_CODE_EDITOR_CORE_URL",
+      "label": {
+        "en": "LINEA address for the plugin's own calls",
+        "es": "Dirección de LINEA para las llamadas del plugin",
+        "gl": "Enderezo de LINEA para as chamadas do plugin"
+      },
+      "description": {
+        "en": "Empty: this server, on its own port.",
+        "es": "Vacío: este mismo servidor, en su puerto.",
+        "gl": "Baleiro: este mesmo servidor, no seu porto."
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# a link to ../linea/node_modules (install.sh makes it)
+/node_modules
+node_modules/
+.DS_Store
+*.log
+.env
+.env.local

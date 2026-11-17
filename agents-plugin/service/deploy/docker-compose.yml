@@ -1,0 +1,93 @@
+# linea-agents' service (the agents-plugin of LINEA), deployed on its own: its own database, no login, no web of its own. People use the
+# agents in LINEA's pages; LINEA's server calls this one with a key they share (AGENTS_SERVICE_KEY), and this one reaches LINEA only
+# through LINEA's REST API (LINEA_API_URL), so LINEA can run, or not, without it. Configure with deploy/.env (see .env.example).
+services:
+  mongo:
+    image: mongo:8.2
+    container_name: agents-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    networks: [agents-network]
+    volumes:
+      - agents-mongo-data:/data/db
+    restart: unless-stopped
+
+  mongo-init-replica:
+    image: mongo:8.2
+    container_name: agents-mongo-init
+    depends_on: [mongo]
+    entrypoint: >
+      bash -c "
+      until mongosh --host mongo --eval 'db.runCommand({ ping: 1 })'; do sleep 2; done;
+      mongosh --host mongo /scripts/initiate-replica-set.js
+      "
+    volumes:
+      - ./initiate-replica-set.js:/scripts/initiate-replica-set.js
+    networks: [agents-network]
+    restart: "no"
+
+  embeddings:
+    container_name: agents-embeddings
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+    # the image is published for amd64 only: on an arm64 host (Apple silicon) it runs emulated
+    platform: linux/amd64
+    command: ["--model-id", "BAAI/bge-small-en-v1.5"]
+    volumes:
+      - agents-embeddings-data:/data        # cache downloaded model weights
+    networks: [agents-network]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  server:
+    container_name: agents-server
+    build:
+      context: ../server
+    env_file:
+      # secrets that do not go in .env (ANTHROPIC_API_KEY, ...)
+      - path: ../server/.env.local
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      mongoUrl: ${MONGO_URL:-mongodb://mongo:27017/linea_agents?replicaSet=rs0&directConnection=true}
+      EMBEDDINGS_URL: http://agents-embeddings:80
+      FLAMAPY_API_URL: ${FLAMAPY_API_URL:-}
+
+      # where LINEA is: the API agents calls, and the address people know it by
+      LINEA_API_URL: "${LINEA_API_URL:?LINEA_API_URL is needed: where LINEA answers (e.g. https://linea.example or http://linea-server:3000)}"
+
+      # the key LINEA and agents share: LINEA's server presents it to agents, and agents to LINEA (LINEA: LINEA_SERVICE_KEYS=agents-plugin:<key>)
+      AGENTS_SERVICE_KEY: "${AGENTS_SERVICE_KEY:?AGENTS_SERVICE_KEY is needed: any long random string, the same as LINEA's}"
+
+      # LINEA's signed events (pushes to the products, generations): the key they are signed with
+      EVENT_WEBHOOK_SECRET: ${EVENT_WEBHOOK_SECRET:-}
+
+      # the service account (a git username that has logged in to agents once) the background work acts as
+      BOT_USER: ${BOT_USER:-}
+      AGENTS_BACKGROUND_TRIGGERS: ${AGENTS_BACKGROUND_TRIGGERS:-on}
+    volumes:
+      # the playground runs product tests in containers it starts through the host's Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      # LINEA's server calls it here; nothing else should
+      - "${AGENTS_PORT:-3001}:3001"
+    networks: [agents-network]
+    depends_on:
+      mongo:
+        condition: service_started
+      mongo-init-replica:
+        condition: service_started
+      embeddings:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  agents-network:
+
+volumes:
+  agents-mongo-data:
+  agents-embeddings-data:

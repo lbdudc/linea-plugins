@@ -1,0 +1,16 @@
+# The analysis service of the analytics plugin. Run alone (docker compose up -d --build) it is on http://localhost:8000, where the
+# LINEA of a laptop looks for it (FLAMAPY_API_URL); inside LINEA's own compose project (plugins/compose.yml) it is `splalm-flamapy:8000`.
+services:
+  flamapy-server:
+    container_name: splalm-flamapy
+    build:
+      context: .
+    ports:
+      - "${FLAMAPY_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

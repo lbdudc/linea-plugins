@@ -1,0 +1,2 @@
+# false positive: an empty value of an example file
+agents-plugin/service/server/.env.example:generic-api-key:12

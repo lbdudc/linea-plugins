@@ -1,0 +1,125 @@
+diff --git a/node_modules/gitlab-commando/dist/GitLabSession.js b/node_modules/gitlab-commando/dist/GitLabSession.js
+index 2398988..87aa7bc 100644
+--- a/node_modules/gitlab-commando/dist/GitLabSession.js
++++ b/node_modules/gitlab-commando/dist/GitLabSession.js
+@@ -57,7 +57,8 @@ export class GitLabSession {
+         }
+     }
+     async rollback() {
+-        for (let i = 0; i < this.commandStack.size; i++) {
++        const commandCount = this.commandStack.size;
++        for (let i = 0; i < commandCount; i++) {
+             const cmd = this.commandStack.pop();
+             await cmd.undo();
+         }
+diff --git a/node_modules/gitlab-commando/dist/commands/CheckAndMergeCommand.js b/node_modules/gitlab-commando/dist/commands/CheckAndMergeCommand.js
+index 1ec79e7..47dc046 100644
+--- a/node_modules/gitlab-commando/dist/commands/CheckAndMergeCommand.js
++++ b/node_modules/gitlab-commando/dist/commands/CheckAndMergeCommand.js
+@@ -9,17 +9,30 @@ export class CheckAndMergeCommand extends Command {
+         this.shouldRemoveSourceBranch = shouldRemoveSourceBranch;
+     }
+     async execute() {
+-        return await new Promise((resolve) => {
++        const clientErrorResponseStatus = [404, 405, 409, 422];
++        const maxAttempts = 120; // 120 * 500ms = 60s of polling before giving up
++        let attempts = 0;
++        return await new Promise((resolve, reject) => {
+             var intervalId = setInterval(async () => {
+-                const clientErrorResponseStatus = [404, 405, 409, 422];
+-                const response = await new MergeMergeRequestCommand(this.url, this.token ?? '', this.id, this.mergeRequestIid, this.shouldRemoveSourceBranch)
+-                    .execute();
+-                const mergeStatus = (await new GetMergeRequestCommand(this.url, this.token ?? '', this.id, this.mergeRequestIid)
+-                    .execute()).detailed_merge_status;
+-                if (!clientErrorResponseStatus.includes(await response.status) ||
+-                    mergeStatus === "broken_status" || mergeStatus === "conflict") {
+-                    resolve(mergeStatus !== "not_open");
++                attempts++;
++                try {
++                    const response = await new MergeMergeRequestCommand(this.url, this.token ?? '', this.id, this.mergeRequestIid, this.shouldRemoveSourceBranch)
++                        .execute();
++                    const mergeStatus = (await new GetMergeRequestCommand(this.url, this.token ?? '', this.id, this.mergeRequestIid)
++                        .execute()).detailed_merge_status;
++                    if (!clientErrorResponseStatus.includes(await response.status) ||
++                        mergeStatus === "broken_status" || mergeStatus === "conflict") {
++                        clearInterval(intervalId);
++                        resolve(mergeStatus !== "not_open");
++                    }
++                    else if (attempts >= maxAttempts) {
++                        clearInterval(intervalId);
++                        reject(new Error(`Merge request ${this.mergeRequestIid} did not reach a terminal status after ${maxAttempts} polling attempts`));
++                    }
++                }
++                catch (error) {
+                     clearInterval(intervalId);
++                    reject(error);
+                 }
+             }, 500);
+         });
+diff --git a/node_modules/gitlab-commando/dist/commands/Command.js b/node_modules/gitlab-commando/dist/commands/Command.js
+index 109bb7e..5805a19 100644
+--- a/node_modules/gitlab-commando/dist/commands/Command.js
++++ b/node_modules/gitlab-commando/dist/commands/Command.js
+@@ -1,5 +1,6 @@
+ import { GitLabError } from "../errors/GitLabError.js";
+ import { GitLabAuthError } from "../errors/GitLabAuthError.js";
++const GITLAB_REQUEST_TIMEOUT_MS = 30000;
+ export class Command {
+     constructor(url, method, path, token) {
+         this.url = url;
+@@ -14,23 +15,37 @@ export class Command {
+                 "Authorization": `Bearer ${this.token}`,
+                 ...(body !== undefined && { "Content-Type": "application/json" })
+             }),
++            signal: AbortSignal.timeout(GITLAB_REQUEST_TIMEOUT_MS),
+         };
+         if (body !== undefined) {
+             init.body = JSON.stringify(body);
+         }
+-        const res = await fetch(`${this.url}/api/v4/${this.path}`, init);
++        let res;
++        try {
++            res = await fetch(`${this.url}/api/v4/${this.path}`, init);
++        }
++        catch (error) {
++            if (error.name === 'TimeoutError' || error.name === 'AbortError') {
++                throw new GitLabError(`GitLab request timed out after ${GITLAB_REQUEST_TIMEOUT_MS}ms: ${this.method} ${this.path}`);
++            }
++            throw new GitLabError(error.message ?? String(error));
++        }
+         if (!json) {
+             return res;
+         }
+         else if (res.ok) {
+-            return await res.json();
++            // Several endpoints (e.g. DELETE tag) return 204/empty body on success —
++            // res.json() throws "Unexpected end of JSON input" on an empty stream.
++            const text = await res.text();
++            return text ? JSON.parse(text) : null;
+         }
+         else {
+-            const errorResponse = await res.json();
++            const errorText = await res.text();
++            const errorResponse = errorText ? JSON.parse(errorText) : {};
+             if ((await res.status) === 401) {
+                 throw new GitLabAuthError(errorResponse.error);
+             }
+-            throw new GitLabError(`Error from server: ${errorResponse.error ?? 'Unknown error'}`);
++            throw new GitLabError(`Error from server: ${errorResponse.error ?? 'Unknown error'}`, res.status);
+         }
+     }
+ }
+diff --git a/node_modules/gitlab-commando/dist/errors/GitLabError.js b/node_modules/gitlab-commando/dist/errors/GitLabError.js
+index 99059f2..4ac63c7 100644
+--- a/node_modules/gitlab-commando/dist/errors/GitLabError.js
++++ b/node_modules/gitlab-commando/dist/errors/GitLabError.js
+@@ -1,6 +1,7 @@
+ export class GitLabError extends Error {
+-    constructor(message) {
++    constructor(message, status) {
+         super(message);
++        this.status = status;
+     }
+ }
+ //# sourceMappingURL=GitLabError.js.map
+\ No newline at end of file

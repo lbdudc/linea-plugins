@@ -1,0 +1,35 @@
+# spl-code-editor
+
+A LINEA plugin for **simple SPLs** (`kind: plain`): edit their files in the browser, see which code belongs to which feature, and try a derivation without making a product. It adds a **Code** tab to the line.
+
+- **Files.** Tree of the repository at a branch; create, rename, delete, edit (Monaco, the app's own copy). *Save* makes one commit on a branch (a new name makes the branch). It talks to LINEA's repository API (`/api/lines/:id/repo/…`), so it works the same on GitLab, GitHub and the local host; it names no host and keeps no token.
+- **The three things the engine reads.** Between the delimiters of a file the engine reads JavaScript of three kinds, and the editor knows all of them: *code* (`/*% if (feature.x) { %*/`, loops, `var x = ...`: it runs while deriving and writes nothing by itself), *value* (`/*%= expression %*/`: the result is written in the output as text) and *file maker* (`/*%@ return [{ fileName, context }] %*/` at the very start of the file: the file is made once for each thing the header returns). Each has its own color in the editor and a hover that says what it does; the **Debug** panel lists the ones of the open file.
+- **Annotations.** The ones that say which code belongs to which feature: `/*% if (feature.x) { %*/ … /*% } %*/` (also `else if` / `else`). The delimiters of each file type are the line's own, from `src/platform/config.json`. The annotated regions are highlighted, *Features* lists the files and lines of each feature, and *Annotate selection* / *Remove annotation* write the markers into the file (the repository stays the only source of truth; the product derives without the plugin).
+- **Configuration and result.** The *Configuration* tab of the side bar lists every feature of the model with a checkbox (a filter, *All* / *None*, and *Only this file's*; the ones the open file uses are marked); what is ticked is the configuration, and it is remembered per line. Over the editor, a bar says how many are active and which, including the ones the file does not use. *View generated code* opens the final code of the open file for that configuration (the regions it leaves out are dimmed in the editor). *Download product (zip)* gives the whole derived product (not only this file) with that configuration and the changes not saved yet.
+- **Status bar and preferences.** Under the code: line and column, the characters selected, indentation, line ending and language, with two switches (word *Wrap*, Alt+Z, and *Minimap*) that are remembered in the browser. The editor brings VS Code's usual help: bracket colors and guides, sticky scroll, Ctrl+wheel zoom, and every Monaco command (F1, Ctrl/Cmd+F / H / G, multiple cursors, comment). `.vue`, `.jsp`, `.properties` and similar extensions use the closest language Monaco has.
+- **Open files come back.** The open tabs and the active one are remembered per line (in the browser, for the default branch) and reopened after a reload. *Discard* keeps the tabs of files that exist.
+- **Branches.** Switching branch with changes not saved asks first, in a dialog of the app.
+- **Side bar.** It folds to a rail of icons (the arrow at its top, or Ctrl/Cmd+B) to give the code all the width; the state is remembered.
+- **Changes.** The *N changes* counter in the top bar opens a dialog with every change not saved (new, modified, deleted), the lines each one adds and removes, its differences (inline or side by side), and a button to take back only that one; *Discard all* asks twice. ↑↓ moves between the changes and *Open in editor* goes to the file.
+- **Product data.** Value, code and file-maker markers work on `data`, the product's spec as the SPL's `transformation.js` makes it. The **Debug** panel keeps a sample of that spec (JSON, remembered per line) and a switch to pass it through the SPL's `transformation.js`. LINEA's derivation (*View generated code*, the zip, *Try*) gets the sample too (`spec` of `/try`).
+- **Where the file is derived.** The pane of *View generated code* has two sources: **LINEA** (its own engine, the whole product, what you will really get) and **Browser** (this file only, live as you type, with a trace). Browser derives with the features of the configuration completed the way the engine does (parents, mandatory children, what the constraints imply: an approximation, LINEA is the judge), `extra.js` and `transformation.js` of the line (with the changes not saved yet), and the sample data. A header that makes several files shows a selector for each of them; an empty output is said ("LINEA does not create it").
+- **Debugger.** *Run this file* (Debug panel) derives the open file in the browser and follows every marker: the value of each `=` expression, which way each condition went and how many times, what each `var`/`const` holds, how many times a loop ran, and which markers never ran. It is shown at the end of each line, and in the *What happened* list (click to jump). An error says where it is: the marker that threw, a header that failed, a block that is opened and never closed (the engine only says "Unexpected token"), or `transformation.js`. The templates run in a **sandboxed frame** (no session, no storage, no network, stopped after 8 s): they are code of the repository, never run in the page itself. The code it builds is the engine's (same delimiters, helpers and text escaping); the tests compare their output with `spl-js-engine`'s.
+- **Try derivation.** Pick features; LINEA's engine derives (`POST /api/lines/:id/derive-trial`) from the branch **plus the changes not saved yet**, and answers *derives: N files* or the engine's errors. Nothing is created.
+
+## Index
+
+The annotations are indexed in the plugin's own MongoDB collections (`splCodeEditor_annotations`, `…_fileIndex`, `…_indexState`). It is only an index: drop them and the next read rebuilds the same annotations from the repository. It is brought up to date per commit, re-reading only the files whose revision changed; a `git:pushed` event makes the pushed repository's index stale.
+
+## Settings
+
+`maxFileKb`, `editableExtensions` (both public), `delimiters` (JSON override by extension), `coreUrl` (empty: this server on its own port). See `plugin.json`.
+
+## Routes (`/api/plugins/spl-code-editor`)
+
+`GET /lines/:id/features?ref=` · `GET /lines/:id/annotations?ref=&path=` · `POST /lines/:id/annotations/parse` · `POST /lines/:id/annotate` · `POST /lines/:id/reindex` · `POST /lines/:id/try` (`zip: true` also returns the whole derived product as base64; `spec` is a sample of the product's spec for the templates' `data`). All run as the person asking (their authorization is forwarded to LINEA's API) and answer `409` for a line that is not simple.
+
+## Develop
+
+`shared/` holds what both sides run (the annotation parser): the client image is built without `plugins/*/server`, so the web code must not import from there.
+
+Needs the host contract `hostApi ^1.0.0` and the `line.tabs` slot of LINEA (a tab of the line page). Tests: `test/server`, `test/client` (run by the server's vitest, see `server/vitest.config.js`).

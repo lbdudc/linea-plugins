@@ -1,0 +1,16 @@
+{
+  "plugins": [
+    {
+      "id": "analytics-plugin",
+      "path": "analytics-plugin"
+    },
+    {
+      "id": "agents-plugin",
+      "path": "agents-plugin"
+    },
+    {
+      "id": "spl-code-editor",
+      "path": "spl-code-editor"
+    }
+  ]
+}

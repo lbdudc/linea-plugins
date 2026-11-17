@@ -1,0 +1,32 @@
+# linea/server no tiene un .gitignore propio (hereda uno de raíz de monorepo,
+# ver linea/.gitignore). linea-agents es su propio repositorio, así que este
+# fichero replica las entradas relevantes para server/ de ese .gitignore de
+# raíz, más las propias de este módulo.
+.DS_Store
+node_modules
+
+# local env files
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea
+*.iml
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Artefactos de test (ver .eslintignore: los tests de derivación dejan un
+# tmp/<uuid>/ por ejecución fallida)
+tmp/
+coverage/

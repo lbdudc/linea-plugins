@@ -1,0 +1,13 @@
+# The services of the plugins that run on their own, for working on a laptop (LINEA itself running with `server/dev/up.sh` + vite):
+#
+#   docker compose --env-file agents.env up -d --build
+#
+#   analytics-plugin: the analysis service, on http://localhost:8000 (LINEA finds it by FLAMAPY_API_URL)
+#   agents-plugin:    the agents application (agents-plugin/service), on http://localhost:3001.
+#                     It needs its settings (LINEA_API_URL, AGENTS_SERVICE_KEY, BOT_USER...): see agents-plugin/service/deploy/.env.example.
+#                     Leave it out with `docker compose up -d --build flamapy-server` if only the analysis is wanted.
+#
+# For LINEA in Docker, see linea/deploy/docker-compose.plugins.yml: the analysis service on LINEA's network.
+include:
+  - path: analytics-plugin/service/compose.yml
+  - path: agents-plugin/service/deploy/docker-compose.yml

@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # The plugins run inside LINEA, so their tests run with LINEA's: a checkout of lbdudc/linea next to this one.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: linea-plugins
+      - uses: actions/checkout@v4
+        with:
+          repository: lbdudc/linea
+          path: linea
+      - uses: actions/checkout@v4
+        with:
+          repository: lbdudc/linea-metamodels
+          path: linea-metamodels
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: linea/package-lock.json
+      - run: npm ci
+        working-directory: linea
+      - run: npm run build
+        working-directory: linea
+      - run: ./install.sh
+        working-directory: linea-plugins
+      - name: Server side of the plugins and the boundary test
+        run: npx vitest run
+        working-directory: linea/apps/server
+        env:
+          PLUGINS_DIR: ${{ github.workspace }}/linea-plugins
+          LINEA_METAMODELS_DIR: ${{ github.workspace }}/linea-metamodels
+      - name: Client side of the plugins
+        run: npx vitest run
+        working-directory: linea/apps/client
+        env:
+          PLUGINS_DIR: ${{ github.workspace }}/linea-plugins
+      - name: Agents service
+        run: npm ci && npx vitest run
+        working-directory: linea-plugins/agents-plugin/service/server
+      - name: MCP server
+        run: npm ci && npm run build && npm test
+        working-directory: linea-plugins/mcp-plugin

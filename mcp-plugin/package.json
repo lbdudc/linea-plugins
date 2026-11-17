@@ -1,0 +1,51 @@
+{
+  "name": "@lbdudc/linea-plugin-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP server for LINEA: lets an AI client (Claude, etc.) read and edit one software product line over the Model Context Protocol (stdio).",
+  "main": "dist/index.js",
+  "bin": {
+    "linea-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "clean": "rimraf dist",
+    "test": "node --import tsx --test test/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.39.4",
+    "rimraf": "^5.0.0",
+    "typescript-eslint": "^8.60.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lbdudc/linea-plugins.git",
+    "directory": "mcp-plugin"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

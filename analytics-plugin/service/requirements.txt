@@ -1,0 +1,3 @@
+flamapy
+fastapi
+uvicorn[standard]

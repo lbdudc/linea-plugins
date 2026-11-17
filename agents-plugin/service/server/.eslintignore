@@ -1,0 +1,11 @@
+# Copia de linea/server/.eslintignore (commit c44e10eb8f727a3a0a7e52cbf0dcbe304b904570).
+#
+# Artefactos, no código fuente. Sin esto, `eslint .` los analiza y el recuento
+# de problemas deja de ser un indicador útil. El caso concreto que lo motivó
+# en linea/server: los tests de derivación dejan un `tmp/<uuid>/` por
+# ejecución que falla antes de su limpieza, y llegaron a acumular decenas de
+# miles de problemas de lint irrelevantes frente a los reales del código.
+tmp/
+
+# Informes de cobertura.
+coverage/

@@ -1,0 +1,4 @@
+# El contenido de docs/ es material de trabajo, no del producto.
+docs/*
+# what was agents' documentation while it lived in linea/docs/linea
+!docs/linea-origin/

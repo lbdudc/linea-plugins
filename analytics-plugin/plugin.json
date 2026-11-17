@@ -1,0 +1,41 @@
+{
+  "id": "analytics-plugin",
+  "name": {
+    "en": "Feature model analysis (flamapy)",
+    "es": "Análisis del modelo de características (flamapy)",
+    "gl": "Análise do modelo de características (flamapy)"
+  },
+  "version": "1.0.0",
+  "description": {
+    "en": "Analyses the feature model of a line (core and dead features, satisfiability, configurations) with flamapy, in a service of its own.",
+    "es": "Analiza el modelo de características de una línea (núcleo, características muertas, satisfacibilidad, configuraciones) con flamapy, en un servicio propio.",
+    "gl": "Analiza o modelo de características dunha liña (núcleo, características mortas, satisfacibilidade, configuracións) con flamapy, nun servizo propio."
+  },
+  "icon": "pi-chart-bar",
+  "requires": {
+    "linea": "^1.0.0"
+  },
+  "server": "server/index.js",
+  "client": "client/index.js",
+  "remote": {
+    "baseUrl": "${FLAMAPY_API_URL:-http://localhost:8000}",
+    "health": "/health"
+  },
+  "settings": {
+    "url": {
+      "type": "url",
+      "default": "http://localhost:8000",
+      "env": "FLAMAPY_API_URL",
+      "label": {
+        "en": "flamapy service address",
+        "es": "Dirección del servicio flamapy",
+        "gl": "Enderezo do servizo flamapy"
+      },
+      "description": {
+        "en": "Where the flamapy REST service listens.",
+        "es": "Dónde escucha el servicio REST de flamapy.",
+        "gl": "Onde escoita o servizo REST de flamapy."
+      }
+    }
+  }
+}
