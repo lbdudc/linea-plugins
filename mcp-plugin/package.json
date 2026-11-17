@@ -1,8 +1,8 @@
 {
   "name": "@lbdudc/linea-plugin-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "MCP server for LINEA: lets an AI client (Claude, etc.) read and edit one software product line over the Model Context Protocol (stdio).",
+  "description": "MCP server for LINEA: lets an AI client (Claude, Cursor...) read and edit a software product line over the Model Context Protocol, over stdio (this package) or HTTP (the mcp-plugin service).",
   "main": "dist/index.js",
   "bin": {
     "linea-mcp": "dist/index.js"
@@ -15,7 +15,9 @@
     "lint:fix": "eslint src --fix",
     "clean": "rimraf dist",
     "test": "node --import tsx --test test/*.test.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "start:http": "node dist/http.js",
+    "dev:http": "tsx watch src/http.ts"
   },
   "engines": {
     "node": ">=18"

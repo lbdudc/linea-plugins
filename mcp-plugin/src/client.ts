@@ -1,7 +1,20 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { config } from './config.js';
 import type { LoginResponse } from './types.js';
 
-let currentJwt = config.SPLALM_JWT;
+/**
+ * What one HTTP request to the MCP server brings: where LINEA is and who the caller is. Inside `requestContext.run`, every call to LINEA
+ * is made as that caller (their `Authorization`, and the git host that vouches for a git token); outside it (stdio) the environment is used.
+ */
+export interface RequestContext {
+  baseUrl: string;
+  authorization: string;
+  gitHost?: string;
+}
+export const requestContext = new AsyncLocalStorage<RequestContext>();
+
+let currentJwt: string | undefined;
+const jwt = (): string => (currentJwt ??= config.SPLALM_JWT);
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ---------------------------------------------------------------------------
@@ -35,7 +48,9 @@ export function handleApiError(error: unknown): string {
       case 400:
         return `Error: Bad request — ${error.message}. Check your input parameters.`;
       case 401:
-        return 'Error: Unauthorized. Your session has expired — update SPLALM_JWT in .env and restart.';
+        return requestContext.getStore()
+          ? 'Error: Unauthorized. LINEA did not accept the credentials of this connection (the Authorization header of the MCP client).'
+          : 'Error: Unauthorized. Your session has expired — update SPLALM_JWT in .env and restart.';
       case 403:
         return 'Error: Permission denied. You need a higher access level on the git host (maintainer=40, owner=50) for this operation.';
       case 404:
@@ -50,7 +65,7 @@ export function handleApiError(error: unknown): string {
   }
   if (error instanceof Error) {
     if (error.message.includes('ECONNREFUSED')) {
-      return `Error: Cannot reach SPLALM at ${config.SPLALM_BASE_URL}. Make sure the server is running.`;
+      return `Error: Cannot reach LINEA at ${requestContext.getStore()?.baseUrl ?? config.SPLALM_BASE_URL}. Make sure the server is running.`;
     }
     if (error.message.includes('ETIMEDOUT') || error.message.includes('timeout')) {
       return 'Error: Request timed out. synchronize_product can take several minutes — increase client timeout.';
@@ -62,6 +77,14 @@ export function handleApiError(error: unknown): string {
 
 /** A LINEA session, or the git token of an account (with the host that vouches for it, when not the primary one). */
 export function authHeaders(): Record<string, string> {
+  const ctx = requestContext.getStore();
+  if (ctx) {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': ctx.authorization,
+      ...(ctx.gitHost ? { 'X-Git-Host': ctx.gitHost } : {}),
+    };
+  }
   if (config.SPLALM_GIT_TOKEN) {
     return {
       'Content-Type': 'application/json',
@@ -69,7 +92,7 @@ export function authHeaders(): Record<string, string> {
       ...(config.SPLALM_GIT_HOST ? { 'X-Git-Host': config.SPLALM_GIT_HOST } : {}),
     };
   }
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentJwt}` };
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt()}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +106,7 @@ async function apiRequest(
   opts: { text?: boolean; binary?: boolean } = {},
   isRetry = false,
 ): Promise<unknown> {
-  const url = `${config.SPLALM_BASE_URL}${urlPath}`;
+  const url = `${requestContext.getStore()?.baseUrl ?? config.SPLALM_BASE_URL}${urlPath}`;
   const init: RequestInit = {
     method,
     headers: authHeaders(),
@@ -92,7 +115,7 @@ async function apiRequest(
 
   const res = await fetch(url, init);
 
-  if (res.status === 401 && !isRetry && !config.SPLALM_GIT_TOKEN) {
+  if (res.status === 401 && !isRetry && !config.SPLALM_GIT_TOKEN && !requestContext.getStore()) {
     const refreshed = await doRefresh();
     if (refreshed) return apiRequest(method, urlPath, body, opts, true);
   }
@@ -128,7 +151,7 @@ async function doRefresh(): Promise<boolean> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${currentJwt}`,
+        'Authorization': `Bearer ${jwt()}`,
       },
     });
     if (!res.ok) return false;

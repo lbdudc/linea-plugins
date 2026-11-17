@@ -1,72 +1,65 @@
-# SPLALM MCP Server
+# MCP plugin
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that exposes a **single SPLALM Software Product Line (SPL)** to AI assistants such as Claude Desktop or Claude Code.
-
-The server acts as a thin proxy: each MCP tool maps to one or two SPLALM REST calls, so all business logic, permission checks, and GitLab orchestration stay inside SPLALM itself.
+Use a line of [LINEA](https://github.com/lbdudc/linea) from an AI assistant (Claude Desktop, Claude Code, Cursor...) over the
+[Model Context Protocol](https://modelcontextprotocol.io): read and edit its feature model, products and agents, as **the person who connects**.
+Each tool maps to one or two calls of LINEA's REST API, so permissions, validation and git stay LINEA's.
 
 ```
-AI assistant ──► splalm-mcp-server ──► SPLALM REST API ──► MongoDB + GitLab
+AI assistant ──► MCP service (this plugin) ──► LINEA REST API ──► MongoDB + git host
 ```
 
----
+It is a **remote plugin** of LINEA (`plugin.json` in this folder): a service of its own that the *Plugins* view of LINEA lists, with its health.
+It comes in two shapes, the same tools in both:
 
-## Prerequisites
+| | HTTP (the plugin) | stdio (the npm package) |
+|---|---|---|
+| Run as | a service next to LINEA (`ghcr.io/lbdudc/linea-mcp`) | a process the client starts (`npx @lbdudc/linea-plugin-mcp`) |
+| Lines | every line, one endpoint each: `/mcp/<line id>` | the one in `SPL_LINE_ID` |
+| Credentials | the client sends them on every request | environment of the process |
 
-| Requirement | Notes |
-|---|---|
-| **Node.js ≥ 18** | Required by the MCP SDK and the `fetch` built-in |
-| **SPLALM server running** | The MCP is a proxy — it cannot work without it |
-| **GitLab instance** | Used by SPLALM for product repos; must be reachable from the SPLALM server |
-| **A SPLALM account** | You need at least Reporter access (level 20) on the target SPL |
+## HTTP: the plugin
 
----
-
-## Setup
-
-### 1 — Clone and install dependencies
+Start it with LINEA's Compose files (`docker compose -f docker-compose.yml -f docker-compose.plugins.yml up -d`: the service is on
+`http://localhost:9000/mcp/...` through LINEA's proxy and on port 3333), then switch the plugin on in *Configuration → Plugins*. Or on its own:
 
 ```bash
-git clone <this-repo>
-cd splalm-mcp
-npm install
+docker run -p 3333:3333 -e LINEA_API_URL=http://host.docker.internal:3000 ghcr.io/lbdudc/linea-mcp
+# from a checkout: npm ci && npm run build && LINEA_API_URL=http://localhost:3000 npm run start:http
 ```
 
-### 2 — Build
+| Environment | Default | Meaning |
+|---|---|---|
+| `LINEA_API_URL` | `http://localhost:3000` | where LINEA's server is (the service calls it with each caller's credentials) |
+| `PORT` | `3333` | where it listens |
+| `MCP_PUBLIC_URL` | `http://localhost:<port>` | the address people use, shown on its home page |
+| `MCP_READ_ONLY` | `false` | leave out every tool that changes something, for every line |
+
+Endpoints: `POST /mcp/<line id>` (add `?readonly=true` for the tools that only read), `GET /health`, `GET /` (how to connect). The service keeps
+**no credentials and no sessions**: the client sends `Authorization: Bearer <session>` or `Authorization: GitToken <token>` (with
+`X-Git-Host: local|gitlab|github` when the host is not the primary one) on every request, and LINEA treats each call as that person's.
+A git token is the better choice for a client: it does not expire like a session (on the `local` host it is the one of your account).
+
+**Claude Code**
 
 ```bash
-npm run build
+claude mcp add --transport http linea http://localhost:9000/mcp/<line id> \
+  --header "Authorization: GitToken <your token>" --header "X-Git-Host: local"
 ```
 
-The compiled output lands in `dist/`.
+**Clients that only speak stdio** (Claude Desktop): bridge with `mcp-remote`
 
-### 3 — Create your `.env` file
+```json
+{ "mcpServers": { "linea": { "command": "npx", "args": ["-y", "mcp-remote", "http://localhost:9000/mcp/<line id>",
+  "--header", "Authorization: GitToken <your token>", "--header", "X-Git-Host: local"] } } }
+```
+
+## stdio: the npm package
 
 ```bash
-cp .env.example .env
+npx @lbdudc/linea-plugin-mcp        # reads SPLALM_BASE_URL, SPL_LINE_ID and SPLALM_JWT or SPLALM_GIT_TOKEN from the environment
 ```
 
-Then fill in the values (see [Environment variables](#environment-variables) below).
-
-### 4 — Get a SPLALM JWT
-
-The MCP authenticates to SPLALM using a JWT. To obtain one:
-
-1. Open your SPLALM instance in a browser and log in normally.
-2. Open DevTools → **Application** (Chrome) or **Storage** (Firefox) → **Local Storage**.
-3. Copy the value of the `token` key (it starts with `eyJ…`).
-4. Paste it into `SPLALM_JWT=` in your `.env`.
-
-The MCP automatically refreshes the token before it expires (~115 min) using `POST /api/users/loginFromServiceToken`, so you only need to do this once per session (or after a full session expiry).
-
-### 5 — Find your SPL Line ID
-
-`SPL_LINE_ID` is the MongoDB `_id` of the Software Product Line you want to expose. You can find it in several ways:
-
-- **From the SPLALM UI URL**: navigate to your SPL — the URL contains the line ID (e.g. `/lines/64a1f3b2c9e4a00012abc123`).
-- **From the SPLALM API**: `GET /api/lines` returns all lines your user can see; each object has an `_id` field.
-- **From MongoDB directly**: `db.lines.find({ name: "your-spl-name" }, { _id: 1 })`.
-
-Paste the ID into `SPL_LINE_ID=` in your `.env`.
+Setup, registering with a client and the details follow.
 
 ---
 
@@ -150,10 +143,10 @@ Uses `tsx` for hot-reload. The `.env` file in the project root is loaded automat
 On every start the server validates that SPLALM is reachable and `SPL_LINE_ID` resolves to a real SPL before registering any tools. If the check fails you will see:
 
 ```
-[splalm-mcp-server] Startup check failed: Cannot reach SPLALM at http://localhost:3000
-[splalm-mcp-server]   • SPLALM running at: http://localhost:3000
-[splalm-mcp-server]   • SPL_LINE_ID:       64a1f3b2c9e4a00012abc123
-[splalm-mcp-server]   • Make sure SPLALM is running and SPLALM_JWT is valid.
+[linea-mcp] Startup check failed: Cannot reach SPLALM at http://localhost:3000
+[linea-mcp]   • SPLALM running at: http://localhost:3000
+[linea-mcp]   • SPL_LINE_ID:       64a1f3b2c9e4a00012abc123
+[linea-mcp]   • Make sure SPLALM is running and SPLALM_JWT is valid.
 ```
 
 The process exits with code 1 so the MCP client does not register a broken tool surface.

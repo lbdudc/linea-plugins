@@ -11,6 +11,10 @@
     {
       "id": "spl-code-editor",
       "path": "spl-code-editor"
+    },
+    {
+      "id": "mcp-plugin",
+      "path": "mcp-plugin"
     }
   ]
 }

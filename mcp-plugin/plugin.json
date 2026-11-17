@@ -1,0 +1,41 @@
+{
+  "id": "mcp-plugin",
+  "name": {
+    "en": "MCP server (AI clients)",
+    "es": "Servidor MCP (clientes de IA)",
+    "gl": "Servidor MCP (clientes de IA)"
+  },
+  "version": "0.2.0",
+  "description": {
+    "en": "Use a line of LINEA from an AI client (Claude, Cursor...) over the Model Context Protocol: read and edit its feature model and products, as the person who connects. A service of its own, one endpoint per line.",
+    "es": "Usa una línea de LINEA desde un cliente de IA (Claude, Cursor...) con el Model Context Protocol: lee y edita su modelo de características y sus productos, como la persona que se conecta. Un servicio propio, un endpoint por línea.",
+    "gl": "Usa unha liña de LINEA desde un cliente de IA (Claude, Cursor...) co Model Context Protocol: le e edita o seu modelo de características e os seus produtos, como a persoa que se conecta. Un servizo propio, un endpoint por liña."
+  },
+  "icon": "pi-server",
+  "requires": {
+    "linea": "^1.0.0",
+    "hostApi": "^1.0.0"
+  },
+  "remote": {
+    "baseUrl": "${MCP_URL:-http://localhost:3333}",
+    "health": "/health",
+    "web": "${MCP_PUBLIC_URL:-http://localhost:3333}/"
+  },
+  "settings": {
+    "url": {
+      "type": "url",
+      "default": "http://localhost:3333",
+      "env": "MCP_URL",
+      "label": {
+        "en": "MCP service address",
+        "es": "Dirección del servicio MCP",
+        "gl": "Enderezo do servizo MCP"
+      },
+      "description": {
+        "en": "Where the MCP service listens. Its address for AI clients is /mcp/<line id> on it.",
+        "es": "Dónde escucha el servicio MCP. Su dirección para los clientes de IA es /mcp/<id de la línea> en él.",
+        "gl": "Onde escoita o servizo MCP. O seu enderezo para os clientes de IA é /mcp/<id da liña> nel."
+      }
+    }
+  }
+}

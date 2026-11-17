@@ -8,11 +8,11 @@ the catalog (`marketplace.json`), the official plugins, and how to write your ow
 | [`analytics-plugin`](analytics-plugin) | Feature-model analysis with flamapy (figures strip, analysis panel). Runs a service of its own. |
 | [`agents-plugin`](agents-plugin) | AI agents as pages of LINEA. Its service (`agents-plugin/service`) deploys apart and talks to LINEA by REST. |
 | [`spl-code-editor`](spl-code-editor) | The Code tab of simple SPLs: file editor, feature↔code annotations, trial derivation. |
-| [`mcp-plugin`](mcp-plugin) | MCP server (`@lbdudc/linea-plugin-mcp`, from this repository for now): use LINEA from an AI client over the Model Context Protocol. |
+| [`mcp-plugin`](mcp-plugin) | MCP server: use a line of LINEA from an AI client (Claude, Cursor...) over the Model Context Protocol, as the person who connects. A service of its own (`ghcr.io/lbdudc/linea-mcp`, endpoint `/mcp/<line id>`), also as a stdio npm package. |
 
 **Use them.** The official LINEA images (`ghcr.io/lbdudc/linea-server`, `linea-client`) already carry the plugins of this catalog; an administrator
 switches them on in *Configuration → Plugins*. To use your own folder of plugins, point `PLUGINS_DIR` at it. The services some plugins run as are images too:
-`ghcr.io/lbdudc/linea-flamapy` (analytics; started by `docker-compose.plugins.yml` of LINEA) and `ghcr.io/lbdudc/linea-agents` (agents), published by this repository's *Release* workflow.
+`ghcr.io/lbdudc/linea-flamapy` (analytics; started by `docker-compose.plugins.yml` of LINEA) and `ghcr.io/lbdudc/linea-agents` (agents) and `ghcr.io/lbdudc/linea-mcp` (MCP), published by this repository's *Release* workflow.
 
 **Work on them.** Check out this repository next to a checkout of `lbdudc/linea`, run `npm install` in `linea`, then `./install.sh` here. The plugin tests run with
 LINEA's (`PLUGINS_DIR=$PWD npm test` in `linea`).

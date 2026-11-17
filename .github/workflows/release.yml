@@ -1,7 +1,7 @@
 name: Release
 
 # Creating a GitHub Release (tag vX.Y.Z) publishes the images of the services the plugins run as (GHCR, amd64 + arm64):
-#   ghcr.io/lbdudc/linea-flamapy   ghcr.io/lbdudc/linea-agents
+#   ghcr.io/lbdudc/linea-flamapy   ghcr.io/lbdudc/linea-agents   ghcr.io/lbdudc/linea-mcp
 # and, when the repository variable PUBLISH_MCP is 'true', @lbdudc/linea-plugin-mcp on npm (trusted publishing, no token: publish the
 # package once by hand, add the trusted publisher on npmjs.com for lbdudc/linea-plugins + release.yml, then set the variable).
 
@@ -24,6 +24,8 @@ jobs:
             context: analytics-plugin/service
           - name: linea-agents
             context: agents-plugin/service/server
+          - name: linea-mcp
+            context: mcp-plugin
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
